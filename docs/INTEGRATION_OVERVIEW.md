@@ -290,20 +290,42 @@ app.post('/api/integrations/taifoon/signals', async (req, res) => {
 
 ## Revenue Model
 
-### Proof Anchoring
-- **Free tier:** 1,000 proofs/month
-- **Pro tier:** $0.01 per proof (volume discounts)
-- **Enterprise:** $500/month unlimited
+**Free integration for Sonar.trade** — no upfront fees or per-API-call charges.
 
-### Signal Feed
-- **Free tier:** 100 signals/month (test mode)
-- **Pro tier:** $0.05 per signal (quality-gated)
-- **Enterprise:** $2,000/month unlimited (all 15 types)
+### How Taifoon Earns
 
-**Estimated Revenue (Sonar as Enterprise client):**
-- Proof anchoring: $500/month (unlimited trades)
-- Signal feed: $2,000/month (all signal types)
-- **Total: $2,500/month = $30k/year**
+**1. Clanker Donut Fee Model**
+- When Sonar users execute Taifoon signals on **Clanker V4 pools**, they pay the standard Clanker fee (e.g., 1% per swap)
+- Fees flow into `FoonSniperVault` (deployed at `0x88B373a5186E9F56009f02C91e0e6FAe5A92dea5`)
+- Revenue distributed pro-rata to Taifoon network participants
+- **Sonar pays $0 directly** — users pay via normal Clanker mechanics
+
+**2. Signal Subscriber Quota System**
+- Sonar integrates as a subscriber under **TaifoonCreditVault** (deployed at `0x05584D4B13854CAF3159866e9E607E7894398D23`)
+- Uses prepaid credit model: `credits_consumed = ceil(base_rate × signal_weight)`
+- Signal weights vary by type (e.g., `snipe_signal` = higher weight than `gas_spike`)
+- **Initial partnership quota: generous allocation** (monitored, adjustable)
+
+### Why This Model?
+
+- **Marketing advantage:** "Zero integration fees" beats competition
+- **Aligned incentives:** Sonar's success (more users executing signals) = Taifoon's revenue growth
+- **Proven model:** Same vault + credit system already live for other Taifoon integrations
+- **Scalable:** As Sonar grows, Clanker fee volume grows → Taifoon revenue scales automatically
+
+### Example Revenue Flow
+
+```
+Sonar user sees GEM HUNT signal → Executes $5000 trade on Clanker V4
+  ↓
+Clanker 1% fee = $50
+  ↓
+$50 flows to FoonSniperVault
+  ↓
+Pro-rata distribution: Taifoon network participants earn share
+  ↓
+Sonar paid $0 for the signal, but Taifoon earned from execution
+```
 
 ---
 

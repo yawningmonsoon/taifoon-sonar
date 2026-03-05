@@ -441,17 +441,29 @@ pm2 start src/signal-relay/relay-service.ts --name taifoon-signal-relay
 
 ---
 
-## Revenue Model (Optional)
+## Revenue Model
 
-### Proof Anchoring
-- **Free tier:** 1,000 proofs/month
-- **Pro tier:** $0.01 per proof (volume discounts available)
-- **Enterprise:** Flat $500/month unlimited
+**No direct fees to Sonar.trade.** Integration is free for partnership launch.
 
-### Signal Feed
-- **Free tier:** 100 signals/month (test mode)
-- **Pro tier:** $0.05 per signal (quality-gated)
-- **Enterprise:** Flat $2,000/month unlimited (all 15 types)
+### Revenue Sources
+
+**1. Clanker Donut Fee Split**
+- Sonar users executing Taifoon signals on Clanker V4 pools
+- Revenue flows through `FoonSniperVault` (existing contract)
+- Pro-rata distribution to Taifoon network participants
+- **No additional fees charged to Sonar**
+
+**2. Signal Subscriber System**
+- Sonar integrates as a subscriber under Taifoon's existing quota system
+- Uses `TaifoonCreditVault` prepaid credits model (already deployed)
+- Credits consumed per signal delivered (weight-based, not flat-rate)
+- Initial quota allocation: **generous for partnership launch**
+
+**Benefits:**
+- Sonar gets **free proof anchoring** (builds trust with their users)
+- Sonar gets **free signal feed** (within quota)
+- Taifoon earns from **downstream fees** (Clanker donut splits, not upfront charges)
+- Win-win: Sonar increases user engagement → more Clanker trades → Taifoon revenue grows
 
 ---
 
