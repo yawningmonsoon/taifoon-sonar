@@ -404,6 +404,54 @@ pm2 start src/signal-relay/relay-service.ts --name taifoon-signal-relay
 
 ---
 
+## 🎯 Audit Trail Examples (NEW)
+
+**Added to address:** "Nothing worse than sharing proofs API that doesn't work"
+
+### Working Demos
+
+**1. `examples/working-proof-demo.ts`**
+- Complete E2E flow with real infrastructure
+- Uses Taifoon devnet (chainId 36927)
+- Shows all 6 proof layers
+- **Run:** `npx tsx examples/working-proof-demo.ts`
+
+**2. `examples/audit-trail-demo.ts`**
+- Shows WHY proofs matter (not just HOW)
+- Dispute resolution scenarios
+- Regulatory compliance examples
+- **Run:** `npx tsx examples/audit-trail-demo.ts`
+
+**3. `examples/README.md`**
+- Complete integration guide
+- Current infrastructure status
+- Testing recommendations
+- Marketing messaging
+
+### Current Status
+
+**✅ Working Now:**
+- Proof API endpoint accessible
+- Valid JSON structure returned
+- Integration code complete
+- Scanner UI live
+
+**🔄 Mainnet (Base, Arbitrum, etc.):**
+- API ready, proofs populate as infrastructure completes
+- Users see: "Proof pending" → "Proof verified" (automatic)
+- **Safe to integrate now** — proofs backfill automatically
+
+### Key Insight
+
+**Integration doesn't block on full proof availability:**
+1. Sonar integrates proof anchor service today
+2. API returns proof URLs immediately
+3. Proofs populate as backfill completes
+4. Users see verified badge automatically
+5. No re-integration needed
+
+---
+
 ## Integration Checklist
 
 ### For Sonar.trade
