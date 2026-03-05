@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: Taifoon ↔ Sonar Integration API
+  version: 0.1.0
+  description: |
+    **Bidirectional integration between Taifoon Network and Sonar.trade**
+    
+    Two main flows:
+    1. **Sonar → Taifoon**: Anchor trades to V5 proofs
+    2. **Taifoon → Sonar**: Receive AI-curated signals via webhook
+
+servers:
+  - url: https://api.taifoon.dev
+    description: Taifoon API (production)
+  - url: http://localhost:8082
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/v5/proof/anchor:
+    post:
+      summary: Anchor trade to V5 proofs
+      description: |
+        Generate a 6-layer cryptographic proof for a Sonar trade.
+        Returns proof blob + verification URL.
+      tags:
+        - Proof Anchoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProofRequest'
+            example:
+              chain_id: 8453
+              block_number: 42891234
+              tx_hash: "0xabc123..."
+              strategy: "market_making"
+              metadata:
+                user: "0x123..."
+                vault: "0x456..."
+                allocation_usd: 5000
+      responses:
+        '200':
+          description: Proof generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofResponse'
+        '400':
+          description: Bad request (missing required fields)
+        '401':
+          description: Unauthorized (invalid API key)
+        '429':
+          description: Rate limit exceeded
+        '500':
+          description: Proof generation failed
+
+  /api/v5/proof/{proof_id}:
+    get:
+      summary: Retrieve proof by ID
+      description: Fetch a previously generated proof from cache.
+      tags:
+        - Proof Anchoring
+      parameters:
+        - name: proof_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "proof_8453_42891234_abc123"
+      responses:
+        '200':
+          description: Proof retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProofResponse'
+        '404':
+          description: Proof not found
+
+  /api/integrations/sonar/signals:
+    post:
+      summary: Receive Taifoon signal (Sonar webhook)
+      description: |
+        **Webhook endpoint for Sonar to receive Taifoon signals.**
+        
+        Includes HMAC signature verification for security.
+        
+        **Signature Generation:**
+        ```
+        signature = HMAC-SHA256(webhook_secret, timestamp + "." + payload)
+        ```
+      tags:
+        - Signal Relay
+      security:
+        - HmacAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/TokenLaunchSignal'
+                - $ref: '#/components/schemas/SnipeSignal'
+                - $ref: '#/components/schemas/WhaleTransferSignal'
+            example:
+              type: "snipe_signal"
+              action: "entry"
+              strategy: "GEM_HUNT"
+              token_address: "0x123..."
+              token_symbol: "BASED"
+              chain_id: 8453
+              platform: "clanker"
+              entry_price: 0.0000123
+              confidence: 0.87
+              recommended_params:
+                allocation_pct: 5
+                take_profit_pct: 350
+                stop_loss_pct: 18
+                timeout_minutes: 80
+              proof_url: "https://scanner.taifoon.dev/api/v5/proof/blob/8453/42891234"
+      responses:
+        '200':
+          description: Signal accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [accepted, skipped]
+                  sonar_strategy_id:
+                    type: string
+                  taifoon_signal_id:
+                    type: string
+        '401':
+          description: Invalid HMAC signature
+        '500':
+          description: Failed to process signal
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API key for Taifoon proof anchoring
+    HmacAuth:
+      type: apiKey
+      in: header
+      name: X-Taifoon-Signature
+      description: HMAC-SHA256 signature (timestamp + payload)
+
+  schemas:
+    ProofRequest:
+      type: object
+      required:
+        - chain_id
+        - block_number
+      properties:
+        chain_id:
+          type: number
+          description: EVM chain ID or 'solana'
+          example: 8453
+        block_number:
+          type: number
+          description: Block number where trade was executed
+          example: 42891234
+        tx_hash:
+          type: string
+          description: Transaction hash (optional)
+          example: "0xabc123..."
+        strategy:
+          type: string
+          description: Sonar strategy type
+          example: "market_making"
+        metadata:
+          type: object
+          description: Additional context
+          additionalProperties: true
+
+    ProofResponse:
+      type: object
+      properties:
+        proof_id:
+          type: string
+          example: "proof_8453_42891234_abc123"
+        proof_blob:
+          type: string
+          description: Full 6-layer proof (hex-encoded)
+          example: "0x..."
+        verification_url:
+          type: string
+          example: "https://scanner.taifoon.dev/proof/8453/42891234"
+        layers:
+          type: object
+          properties:
+            block:
+              type: object
+              properties:
+                hash:
+                  type: string
+                timestamp:
+                  type: number
+            twig:
+              type: object
+              properties:
+                root:
+                  type: string
+                index:
+                  type: number
+            mmr:
+              type: object
+              properties:
+                root:
+                  type: string
+                peak_count:
+                  type: number
+            superroot:
+              type: object
+              properties:
+                root:
+                  type: string
+                batch_id:
+                  type: number
+            finality:
+              type: object
+              properties:
+                type:
+                  type: string
+                confirmed:
+                  type: boolean
+            operator:
+              type: object
+              properties:
+                attested:
+                  type: boolean
+                timestamp:
+                  type: number
+        on_chain_verifiable:
+          type: boolean
+        generated_at:
+          type: number
+          description: Unix timestamp (milliseconds)
+
+    TokenLaunchSignal:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [token_launch]
+        token_address:
+          type: string
+        token_symbol:
+          type: string
+        chain_id:
+          oneOf:
+            - type: number
+            - type: string
+        platform:
+          type: string
+        initial_price:
+          type: number
+        rug_score:
+          type: number
+        sniper_score:
+          type: number
+        proof_url:
+          type: string
+        timestamp:
+          type: number
+
+    SnipeSignal:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [snipe_signal]
+        action:
+          type: string
+          enum: [entry, exit, monitor]
+        strategy:
+          type: string
+          enum: [GEM_HUNT, SWEEPER, WHALE]
+        token_address:
+          type: string
+        entry_price:
+          type: number
+        confidence:
+          type: number
+        recommended_params:
+          type: object
+          properties:
+            allocation_pct:
+              type: number
+            take_profit_pct:
+              type: number
+            stop_loss_pct:
+              type: number
+            timeout_minutes:
+              type: number
+        proof_url:
+          type: string
+
+    WhaleTransferSignal:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [whale_transfer]
+        from_address:
+          type: string
+        to_address:
+          type: string
+        value_usd:
+          type: number
+        chain_id:
+          oneOf:
+            - type: number
+            - type: string
+        tx_hash:
+          type: string
+        proof_url:
+          type: string
